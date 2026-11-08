@@ -1,3 +1,4 @@
+
 'use client'
 
 import Link from 'next/link'
@@ -81,7 +82,9 @@ export default function Login() {
               <br />
               we make
               <br />
-              <span className="italic text-[#a5d6b8]">good happen.</span>
+              <span className="italic text-[#a5d6b8]">
+                good happen.
+              </span>
             </h1>
 
             <p className="mt-6 max-w-md text-lg leading-8 text-white/65">
@@ -90,7 +93,9 @@ export default function Login() {
             </p>
 
             <div className="mt-10">
-              <p className="text-sm font-semibold">A community for everyone</p>
+              <p className="text-sm font-semibold">
+                A community for everyone
+              </p>
               <p className="mt-1 text-xs text-white/50">
                 Connect. Participate. Make an impact.
               </p>
@@ -123,7 +128,9 @@ export default function Login() {
               <h2 className="text-4xl font-bold tracking-tight text-[#173e32] sm:text-5xl">
                 Sign in to
                 <br />
-                <span className="italic text-[#65a985]">Kindred.</span>
+                <span className="italic text-[#65a985]">
+                  Kindred.
+                </span>
               </h2>
 
               <p className="mt-4 text-sm leading-6 text-gray-500">
@@ -182,7 +189,11 @@ export default function Login() {
                     }
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#438365]"
                   >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    {showPassword ? (
+                      <EyeOff size={18} />
+                    ) : (
+                      <Eye size={18} />
+                    )}
                   </button>
                 </div>
               </div>
@@ -205,6 +216,48 @@ export default function Login() {
               </button>
             </form>
 
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200" />
+              </div>
+
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-white px-4 text-gray-400">
+                  OR CONTINUE WITH
+                </span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="flex h-14 w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 transition-all duration-300 hover:border-[#438365] hover:bg-[#f8fbf9] hover:shadow-md"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 48 48"
+                className="h-5 w-5"
+              >
+                <path
+                  fill="#EA4335"
+                  d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+                />
+                <path
+                  fill="#4285F4"
+                  d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.25 5.48-4.73 7.18l7.34 5.7c4.28-3.95 7.43-9.77 7.43-17.35z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M10.53 28.59A14.4 14.4 0 0 1 9.75 24c0-1.59.27-3.13.76-4.59l-7.98-6.19A23.9 23.9 0 0 0 0 24c0 3.88.93 7.54 2.56 10.78l7.97-6.19z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M24 48c6.48 0 11.93-2.13 15.9-5.8l-7.34-5.7c-2.04 1.36-4.65 2.16-8.56 2.16-6.26 0-11.57-4.22-13.46-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+                />
+              </svg>
+
+              Continue with Google
+            </button>
+
             <p className="mt-8 text-center text-sm text-gray-500">
               Don't have an account?
               <Link
@@ -224,3 +277,4 @@ export default function Login() {
     </main>
   )
 }
+
