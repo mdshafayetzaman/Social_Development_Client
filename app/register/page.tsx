@@ -15,13 +15,7 @@ import {
   CheckCircle2,
   Sparkles,
 } from 'lucide-react'
-
-interface UserData {
-  name: string
-  email: string
-  photo: string
-  password: string
-}
+import { authClient } from '../lib/auht-client'
 
 export default function Register() {
   const router = useRouter()
@@ -32,6 +26,7 @@ export default function Register() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   const conditions = [
     { label: 'At least 8 characters', valid: password.length >= 8 },
@@ -41,7 +36,7 @@ export default function Register() {
 
   const isPasswordValid = conditions.every((item) => item.valid)
 
-  function submit(e: FormEvent<HTMLFormElement>) {
+  async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError('')
 
@@ -50,30 +45,31 @@ export default function Register() {
       return
     }
 
-    const users: UserData[] = JSON.parse(
-      localStorage.getItem('kindred-users') || '[]',
-    )
+    setIsLoading(true)
 
-    if (
-      users.some((user) => user.email.toLowerCase() === email.toLowerCase())
-    ) {
-      setError('An account with this email already exists.')
-      return
+    try {
+      const { error: signUpError } = await authClient.signUp.email({
+        name: name.trim(),
+        email: email.trim(),
+        password,
+        image: photo.trim() || undefined,
+        callbackURL: '/',
+      })
+
+      if (signUpError) {
+        setError(
+          signUpError.message || 'Registration failed. Please try again.',
+        )
+        return
+      }
+
+      router.replace('/')
+      router.refresh()
+    } catch {
+      setError('Something went wrong. Please try again.')
+    } finally {
+      setIsLoading(false)
     }
-
-    const user: UserData = {
-      name,
-      email,
-      photo: photo || 'https://i.pravatar.cc/100?img=12',
-      password,
-    }
-
-    localStorage.setItem('kindred-users', JSON.stringify([...users, user]))
-    localStorage.setItem('kindred-user', JSON.stringify(user))
-
-    window.dispatchEvent(new Event('kindred-auth'))
-
-    router.push('/events')
   }
 
   return (
@@ -100,7 +96,7 @@ export default function Register() {
             </span>
 
             <h1 className="mt-8 text-5xl font-bold leading-[1.15] xl:text-6xl">
-              There's room
+              There&apos;s room
               <br />
               for <span className="italic text-[#a5d6b8]">you</span> in
               <br />
@@ -156,55 +152,78 @@ export default function Register() {
 
             <form onSubmit={submit} className="space-y-4">
               <div>
-                <label className="mb-2 block text-sm font-semibold text-gray-700">
+                <label
+                  htmlFor="name"
+                  className="mb-2 block text-sm font-semibold text-gray-700"
+                >
                   Your name
                 </label>
+
                 <div className="relative">
                   <User
                     className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
                     size={18}
                   />
+
                   <input
+                    id="name"
+                    name="name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Enter your full name"
                     required
+                    autoComplete="name"
                     className="h-12 w-full rounded-xl border border-gray-200 bg-[#fafcfb] pl-12 pr-4 text-sm text-gray-800 outline-none transition focus:border-[#438365] focus:ring-4 focus:ring-[#438365]/10"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-semibold text-gray-700">
+                <label
+                  htmlFor="email"
+                  className="mb-2 block text-sm font-semibold text-gray-700"
+                >
                   Email address
                 </label>
+
                 <div className="relative">
                   <Mail
                     className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
                     size={18}
                   />
+
                   <input
+                    id="email"
+                    name="email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@example.com"
                     required
+                    autoComplete="email"
                     className="h-12 w-full rounded-xl border border-gray-200 bg-[#fafcfb] pl-12 pr-4 text-sm text-gray-800 outline-none transition focus:border-[#438365] focus:ring-4 focus:ring-[#438365]/10"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-semibold text-gray-700">
+                <label
+                  htmlFor="photo"
+                  className="mb-2 block text-sm font-semibold text-gray-700"
+                >
                   Profile photo{' '}
                   <span className="font-normal text-gray-400">(Optional)</span>
                 </label>
+
                 <div className="relative">
                   <Camera
                     className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
                     size={18}
                   />
+
                   <input
+                    id="photo"
+                    name="photo"
                     type="url"
                     value={photo}
                     onChange={(e) => setPhoto(e.target.value)}
@@ -215,22 +234,31 @@ export default function Register() {
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-semibold text-gray-700">
+                <label
+                  htmlFor="password"
+                  className="mb-2 block text-sm font-semibold text-gray-700"
+                >
                   Password
                 </label>
+
                 <div className="relative">
                   <Lock
                     className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
                     size={18}
                   />
+
                   <input
+                    id="password"
+                    name="password"
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Create a strong password"
                     required
+                    autoComplete="new-password"
                     className="h-12 w-full rounded-xl border border-gray-200 bg-[#fafcfb] pl-12 pr-12 text-sm text-gray-800 outline-none transition focus:border-[#438365] focus:ring-4 focus:ring-[#438365]/10"
                   />
+
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
@@ -247,6 +275,7 @@ export default function Register() {
                   <p className="mb-2 text-xs font-semibold text-gray-600">
                     Password requirements
                   </p>
+
                   <div className="space-y-2">
                     {conditions.map((condition) => (
                       <div
@@ -259,6 +288,7 @@ export default function Register() {
                             condition.valid ? 'text-green-600' : 'text-gray-300'
                           }
                         />
+
                         <span
                           className={`text-xs ${condition.valid ? 'font-medium text-green-700' : 'text-gray-400'}`}
                         >
@@ -271,20 +301,27 @@ export default function Register() {
               </div>
 
               {error && (
-                <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
+                <div
+                  role="alert"
+                  className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600"
+                >
                   {error}
                 </div>
               )}
 
               <button
                 type="submit"
-                className="group flex h-13 w-full items-center justify-center gap-3 rounded-xl bg-[#103c30] text-sm font-bold uppercase tracking-wider text-white shadow-lg shadow-[#103c30]/15 transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#185442] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={isLoading}
+                className="group flex h-[52px] w-full items-center justify-center gap-3 rounded-xl bg-[#103c30] text-sm font-bold uppercase tracking-wider text-white shadow-lg shadow-[#103c30]/15 transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#185442] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Create account
-                <ArrowRight
-                  size={18}
-                  className="transition-transform group-hover:translate-x-1"
-                />
+                {isLoading ? 'Creating account...' : 'Create account'}
+
+                {!isLoading && (
+                  <ArrowRight
+                    size={18}
+                    className="transition-transform group-hover:translate-x-1"
+                  />
+                )}
               </button>
             </form>
 

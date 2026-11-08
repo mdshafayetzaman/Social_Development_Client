@@ -1,4 +1,3 @@
-
 'use client'
 
 import Link from 'next/link'
@@ -13,13 +12,7 @@ import {
   EyeOff,
   Sparkles,
 } from 'lucide-react'
-
-interface UserData {
-  name: string
-  email: string
-  photo: string
-  password: string
-}
+import { authClient } from '../lib/auht-client'
 
 export default function Login() {
   const router = useRouter()
@@ -28,30 +21,50 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false)
 
-  function submit(e: FormEvent<HTMLFormElement>) {
+  async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError('')
+    setIsLoading(true)
 
-    const users: UserData[] = JSON.parse(
-      localStorage.getItem('kindred-users') || '[]',
-    )
+    try {
+      const { error: signInError } = await authClient.signIn.email({
+        email: email.trim(),
+        password,
+        callbackURL: '/',
+      })
 
-    const user = users.find(
-      (u) =>
-        u.email.toLowerCase() === email.toLowerCase() &&
-        u.password === password,
-    )
+      if (signInError) {
+        setError(
+          signInError.message || 'Invalid email or password. Please try again.',
+        )
+        return
+      }
 
-    if (!user) {
-      setError('Invalid email or password. Please try again.')
-      return
+      router.replace('/')
+      router.refresh()
+    } catch {
+      setError('Something went wrong. Please try again.')
+    } finally {
+      setIsLoading(false)
     }
+  }
 
-    localStorage.setItem('kindred-user', JSON.stringify(user))
-    window.dispatchEvent(new Event('kindred-auth'))
+  async function handleGoogleSignIn() {
+    setError('')
+    setIsGoogleLoading(true)
 
-    router.push('/events')
+    try {
+      await authClient.signIn.social({
+        provider: 'google',
+        callbackURL: '/',
+      })
+    } catch {
+      setError('Google sign in failed. Please try again.')
+      setIsGoogleLoading(false)
+    }
   }
 
   return (
@@ -82,9 +95,7 @@ export default function Login() {
               <br />
               we make
               <br />
-              <span className="italic text-[#a5d6b8]">
-                good happen.
-              </span>
+              <span className="italic text-[#a5d6b8]">good happen.</span>
             </h1>
 
             <p className="mt-6 max-w-md text-lg leading-8 text-white/65">
@@ -93,9 +104,7 @@ export default function Login() {
             </p>
 
             <div className="mt-10">
-              <p className="text-sm font-semibold">
-                A community for everyone
-              </p>
+              <p className="text-sm font-semibold">A community for everyone</p>
               <p className="mt-1 text-xs text-white/50">
                 Connect. Participate. Make an impact.
               </p>
@@ -128,9 +137,7 @@ export default function Login() {
               <h2 className="text-4xl font-bold tracking-tight text-[#173e32] sm:text-5xl">
                 Sign in to
                 <br />
-                <span className="italic text-[#65a985]">
-                  Kindred.
-                </span>
+                <span className="italic text-[#65a985]">Kindred.</span>
               </h2>
 
               <p className="mt-4 text-sm leading-6 text-gray-500">
@@ -140,7 +147,10 @@ export default function Login() {
 
             <form onSubmit={submit} className="space-y-5">
               <div>
-                <label className="mb-2 block text-sm font-semibold text-gray-700">
+                <label
+                  htmlFor="email"
+                  className="mb-2 block text-sm font-semibold text-gray-700"
+                >
                   Email address
                 </label>
 
@@ -151,18 +161,24 @@ export default function Login() {
                   />
 
                   <input
+                    id="email"
+                    name="email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@example.com"
+                    autoComplete="email"
                     required
-                    className="h-13 w-full rounded-xl border border-gray-200 bg-[#fafcfb] pl-12 pr-4 text-sm text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#438365] focus:ring-4 focus:ring-[#438365]/10"
+                    className="h-[52px] w-full rounded-xl border border-gray-200 bg-[#fafcfb] pl-12 pr-4 text-sm text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#438365] focus:ring-4 focus:ring-[#438365]/10"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-semibold text-gray-700">
+                <label
+                  htmlFor="password"
+                  className="mb-2 block text-sm font-semibold text-gray-700"
+                >
                   Password
                 </label>
 
@@ -173,12 +189,15 @@ export default function Login() {
                   />
 
                   <input
+                    id="password"
+                    name="password"
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
+                    autoComplete="current-password"
                     required
-                    className="h-13 w-full rounded-xl border border-gray-200 bg-[#fafcfb] pl-12 pr-12 text-sm text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#438365] focus:ring-4 focus:ring-[#438365]/10"
+                    className="h-[52px] w-full rounded-xl border border-gray-200 bg-[#fafcfb] pl-12 pr-12 text-sm text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#438365] focus:ring-4 focus:ring-[#438365]/10"
                   />
 
                   <button
@@ -189,30 +208,33 @@ export default function Login() {
                     }
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#438365]"
                   >
-                    {showPassword ? (
-                      <EyeOff size={18} />
-                    ) : (
-                      <Eye size={18} />
-                    )}
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
               </div>
 
               {error && (
-                <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
+                <div
+                  role="alert"
+                  className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600"
+                >
                   {error}
                 </div>
               )}
 
               <button
                 type="submit"
-                className="group flex h-14 w-full items-center justify-center gap-3 rounded-xl bg-[#103c30] font-semibold text-white shadow-lg shadow-[#103c30]/15 transition-all duration-300 hover:bg-[#185442] hover:shadow-xl"
+                disabled={isLoading || isGoogleLoading}
+                className="group flex h-14 w-full items-center justify-center gap-3 rounded-xl bg-[#103c30] font-semibold text-white shadow-lg shadow-[#103c30]/15 transition-all duration-300 hover:bg-[#185442] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Sign in
-                <ArrowRight
-                  size={18}
-                  className="transition-transform group-hover:translate-x-1"
-                />
+                {isLoading ? 'Signing in...' : 'Sign in'}
+
+                {!isLoading && (
+                  <ArrowRight
+                    size={18}
+                    className="transition-transform group-hover:translate-x-1"
+                  />
+                )}
               </button>
             </form>
 
@@ -230,7 +252,9 @@ export default function Login() {
 
             <button
               type="button"
-              className="flex h-14 w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 transition-all duration-300 hover:border-[#438365] hover:bg-[#f8fbf9] hover:shadow-md"
+              onClick={handleGoogleSignIn}
+              disabled={isGoogleLoading || isLoading}
+              className="flex h-14 w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 transition-all duration-300 hover:border-[#438365] hover:bg-[#f8fbf9] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -255,11 +279,13 @@ export default function Login() {
                 />
               </svg>
 
-              Continue with Google
+              {isGoogleLoading
+                ? 'Connecting to Google...'
+                : 'Continue with Google'}
             </button>
 
             <p className="mt-8 text-center text-sm text-gray-500">
-              Don't have an account?
+              Don&apos;t have an account?
               <Link
                 href="/register"
                 className="ml-1 font-bold text-[#438365] transition hover:text-[#103c30]"
@@ -277,4 +303,3 @@ export default function Login() {
     </main>
   )
 }
-
