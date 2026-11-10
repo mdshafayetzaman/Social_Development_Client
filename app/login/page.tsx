@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
+import toast, { Toaster } from 'react-hot-toast'
 import {
   HeartHandshake,
   ArrowRight,
@@ -29,6 +30,8 @@ export default function Login() {
     setError('')
     setIsLoading(true)
 
+    const loadingToast = toast.loading('Signing in...')
+
     try {
       const { error: signInError } = await authClient.signIn.email({
         email: email.trim(),
@@ -37,16 +40,28 @@ export default function Login() {
       })
 
       if (signInError) {
-        setError(
-          signInError.message || 'Invalid email or password. Please try again.',
-        )
+        const message =
+          signInError.message || 'Invalid email or password. Please try again.'
+
+        setError(message)
+        toast.dismiss(loadingToast)
+        toast.error(message, {
+          duration: 3500,
+        })
         return
       }
+
+      toast.dismiss(loadingToast)
+      toast.success('Login successful! Welcome back.', {
+        duration: 2000,
+      })
 
       router.replace('/')
       router.refresh()
     } catch {
+      toast.dismiss(loadingToast)
       setError('Something went wrong. Please try again.')
+      toast.error('Something went wrong. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -56,19 +71,51 @@ export default function Login() {
     setError('')
     setIsGoogleLoading(true)
 
+    const loadingToast = toast.loading('Connecting to Google...')
+
     try {
       await authClient.signIn.social({
         provider: 'google',
         callbackURL: '/',
       })
     } catch {
+      toast.dismiss(loadingToast)
       setError('Google sign in failed. Please try again.')
+      toast.error('Google sign in failed. Please try again.')
       setIsGoogleLoading(false)
     }
   }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#f5f8f5] p-4 sm:p-8">
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          duration: 3500,
+          style: {
+            borderRadius: '14px',
+            background: '#103c30',
+            color: '#fff',
+            padding: '14px 18px',
+            fontSize: '14px',
+            fontWeight: 500,
+          },
+          success: {
+            iconTheme: {
+              primary: '#a5d6b8',
+              secondary: '#103c30',
+            },
+          },
+          error: {
+            style: {
+              background: '#991b1b',
+              color: '#fff',
+              borderRadius: '14px',
+            },
+          },
+        }}
+      />
+
       <div className="grid w-full max-w-5xl overflow-hidden rounded-[28px] border border-gray-100 bg-white shadow-[0_20px_80px_rgba(16,60,48,0.09)] lg:grid-cols-2">
         <section className="relative hidden flex-col justify-between overflow-hidden bg-[#103c30] p-12 text-white lg:flex xl:p-16">
           <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-[#2d8065]/30 blur-3xl" />

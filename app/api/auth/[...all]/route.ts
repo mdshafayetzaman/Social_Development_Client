@@ -1,4 +1,3 @@
-
 import { auth } from '@/app/lib/auth'
 import { toNextJsHandler } from 'better-auth/next-js'
 

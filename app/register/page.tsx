@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
+import toast, { Toaster } from 'react-hot-toast'
 import {
   HeartHandshake,
   ArrowRight,
@@ -41,11 +42,17 @@ export default function Register() {
     setError('')
 
     if (!isPasswordValid) {
-      setError('Please meet all password requirements.')
+      const message = 'Please meet all password requirements.'
+      setError(message)
+      toast.error(message, { duration: 5000 })
       return
     }
 
     setIsLoading(true)
+
+    const loadingToast = toast.loading('Creating your account...', {
+      duration: Infinity,
+    })
 
     try {
       const { error: signUpError } = await authClient.signUp.email({
@@ -57,16 +64,33 @@ export default function Register() {
       })
 
       if (signUpError) {
-        setError(
-          signUpError.message || 'Registration failed. Please try again.',
-        )
+        const message =
+          signUpError.message || 'Registration failed. Please try again.'
+
+        setError(message)
+        toast.dismiss(loadingToast)
+        toast.error(message, {
+          duration: 5000,
+        })
         return
       }
+
+      toast.dismiss(loadingToast)
+
+      toast.success('Account created successfully! Welcome to Kindred.', {
+        duration: 5000,
+      })
 
       router.replace('/')
       router.refresh()
     } catch {
-      setError('Something went wrong. Please try again.')
+      toast.dismiss(loadingToast)
+
+      const message = 'Something went wrong. Please try again.'
+      setError(message)
+      toast.error(message, {
+        duration: 5000,
+      })
     } finally {
       setIsLoading(false)
     }
@@ -74,6 +98,35 @@ export default function Register() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#f5f8f5] p-4 sm:p-8">
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          duration: 5000,
+          style: {
+            borderRadius: '14px',
+            background: '#103c30',
+            color: '#fff',
+            padding: '16px 20px',
+            fontSize: '14px',
+            fontWeight: 500,
+            boxShadow: '0 10px 35px rgba(16,60,48,0.15)',
+          },
+          success: {
+            iconTheme: {
+              primary: '#a5d6b8',
+              secondary: '#103c30',
+            },
+          },
+          error: {
+            style: {
+              background: '#991b1b',
+              color: '#fff',
+              borderRadius: '14px',
+            },
+          },
+        }}
+      />
+
       <div className="grid w-full max-w-5xl overflow-hidden rounded-[28px] border border-gray-100 bg-white shadow-[0_20px_80px_rgba(16,60,48,0.09)] lg:grid-cols-2">
         <section className="relative hidden flex-col justify-between overflow-hidden bg-[#103c30] p-12 text-white lg:flex xl:p-16">
           <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-[#2d8065]/30 blur-3xl" />
