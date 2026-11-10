@@ -24,14 +24,27 @@ export default function UpcomingEventsPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
+    let isMounted = true
+
     const fetchEvents = async () => {
       try {
         setError('')
 
         const response = await fetch('http://localhost:5002/events/user', {
           method: 'GET',
+          credentials: 'include',
           cache: 'no-store',
         })
+
+        if (response.status === 401) {
+          const callbackUrl = window.location.pathname + window.location.search
+
+          window.location.replace(
+            `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`,
+          )
+
+          return
+        }
 
         if (!response.ok) {
           throw new Error('Failed to fetch upcoming events.')
@@ -39,17 +52,27 @@ export default function UpcomingEventsPage() {
 
         const data = await response.json()
 
-        setEvents(Array.isArray(data.events) ? data.events : [])
+        if (isMounted) {
+          setEvents(Array.isArray(data.events) ? data.events : [])
+        }
       } catch (error) {
-        setError(
-          error instanceof Error ? error.message : 'Something went wrong.',
-        )
+        if (isMounted) {
+          setError(
+            error instanceof Error ? error.message : 'Something went wrong.',
+          )
+        }
       } finally {
-        setLoading(false)
+        if (isMounted) {
+          setLoading(false)
+        }
       }
     }
 
     fetchEvents()
+
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   if (loading) {
@@ -99,7 +122,7 @@ export default function UpcomingEventsPage() {
                 className="overflow-hidden rounded-2xl border bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
               >
                 <img
-                  src={event.image || event.imageUrl}
+                  src={event.image || event.imageUrl || ''}
                   alt={event.title}
                   className="h-56 w-full object-cover"
                 />

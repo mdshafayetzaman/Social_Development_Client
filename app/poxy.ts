@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server'
 
 export function proxy(request: NextRequest) {
@@ -6,7 +7,14 @@ export function proxy(request: NextRequest) {
     request.cookies.get('__Secure-better-auth.session_token')?.value
 
   if (!sessionCookie) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    const loginUrl = new URL('/login', request.url)
+
+    loginUrl.searchParams.set(
+      'callbackUrl',
+      request.nextUrl.pathname + request.nextUrl.search,
+    )
+
+    return NextResponse.redirect(loginUrl)
   }
 
   return NextResponse.next()
@@ -15,10 +23,11 @@ export function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     '/events/:path*',
+    '/upcoming-events',
     '/upcoming-events/:path*',
     '/create-event/:path*',
-    '/joined-events/:path*',
     '/manage-events/:path*',
+    '/joined-events/:path*',
     '/edit-event/:path*',
   ],
 }

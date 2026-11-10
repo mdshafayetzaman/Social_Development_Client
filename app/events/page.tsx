@@ -12,6 +12,7 @@ import {
   ArrowUpRight,
   Loader2,
 } from 'lucide-react'
+import { authClient } from '../lib/auht-client'
 
 interface EventItem {
   _id: string
@@ -30,10 +31,14 @@ interface EventItem {
 }
 
 export default function EventsPage() {
+  const { data: session, isPending } = authClient.useSession()
+
   const [events, setEvents] = useState<EventItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
+
+  const isLoggedIn = !!session?.user
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -71,11 +76,7 @@ export default function EventsPage() {
           return new Date(event.createdAt).getTime()
         }
 
-        try {
-          return parseInt(event._id.substring(0, 8), 16) * 1000
-        } catch {
-          return 0
-        }
+        return parseInt(event._id.substring(0, 8), 16) * 1000
       }
 
       return getTimestamp(b) - getTimestamp(a)
@@ -98,7 +99,7 @@ export default function EventsPage() {
     })
   }, [search, sortedEvents])
 
-  if (loading) {
+  if (loading || isPending) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center">
@@ -289,7 +290,11 @@ export default function EventsPage() {
                   </div>
 
                   <Link
-                    href={`/events/${event._id}`}
+                    href={
+                      isLoggedIn
+                        ? `/events/${event._id}`
+                        : `/login?callbackUrl=${encodeURIComponent(`/events/${event._id}`)}`
+                    }
                     className="mt-6 flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 font-semibold text-white transition hover:bg-green-700"
                   >
                     View Details

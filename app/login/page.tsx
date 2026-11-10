@@ -25,6 +25,21 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
 
+  function getCallbackUrl() {
+    const params = new URLSearchParams(window.location.search)
+    const callbackUrl = params.get('callbackUrl')
+
+    if (
+      callbackUrl &&
+      callbackUrl.startsWith('/') &&
+      !callbackUrl.startsWith('//')
+    ) {
+      return callbackUrl
+    }
+
+    return '/'
+  }
+
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError('')
@@ -36,7 +51,7 @@ export default function Login() {
       const { error: signInError } = await authClient.signIn.email({
         email: email.trim(),
         password,
-        callbackURL: '/',
+        callbackURL: getCallbackUrl(),
       })
 
       if (signInError) {
@@ -52,11 +67,12 @@ export default function Login() {
       }
 
       toast.dismiss(loadingToast)
+
       toast.success('Login successful! Welcome back.', {
         duration: 2000,
       })
 
-      router.replace('/')
+      router.replace(getCallbackUrl())
       router.refresh()
     } catch {
       toast.dismiss(loadingToast)
@@ -76,7 +92,7 @@ export default function Login() {
     try {
       await authClient.signIn.social({
         provider: 'google',
-        callbackURL: '/',
+        callbackURL: getCallbackUrl(),
       })
     } catch {
       toast.dismiss(loadingToast)
@@ -332,7 +348,7 @@ export default function Login() {
             </button>
 
             <p className="mt-8 text-center text-sm text-gray-500">
-              Don&apos;t have an account?
+              Don't have an account?
               <Link
                 href="/register"
                 className="ml-1 font-bold text-[#438365] transition hover:text-[#103c30]"

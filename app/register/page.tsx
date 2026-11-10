@@ -50,9 +50,7 @@ export default function Register() {
 
     setIsLoading(true)
 
-    const loadingToast = toast.loading('Creating your account...', {
-      duration: Infinity,
-    })
+    const loadingToast = toast.loading('Creating your account...')
 
     try {
       const { error: signUpError } = await authClient.signUp.email({
@@ -60,7 +58,7 @@ export default function Register() {
         email: email.trim(),
         password,
         image: photo.trim() || undefined,
-        callbackURL: '/',
+        callbackURL: '/login',
       })
 
       if (signUpError) {
@@ -69,28 +67,23 @@ export default function Register() {
 
         setError(message)
         toast.dismiss(loadingToast)
-        toast.error(message, {
-          duration: 5000,
-        })
+        toast.error(message, { duration: 5000 })
         return
       }
 
       toast.dismiss(loadingToast)
 
-      toast.success('Account created successfully! Welcome to Kindred.', {
-        duration: 5000,
+      toast.success('Account created successfully! Please sign in.', {
+        duration: 2000,
       })
 
-      router.replace('/')
-      router.refresh()
+      router.replace('/login')
     } catch {
       toast.dismiss(loadingToast)
 
       const message = 'Something went wrong. Please try again.'
       setError(message)
-      toast.error(message, {
-        duration: 5000,
-      })
+      toast.error(message, { duration: 5000 })
     } finally {
       setIsLoading(false)
     }
