@@ -1,6 +1,12 @@
 'use client'
 
-import { useEffect, useState, type FormEvent } from 'react'
+import {
+  Suspense,
+  useEffect,
+  useState,
+  type FormEvent,
+  type ChangeEvent,
+} from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -38,7 +44,7 @@ interface EventForm {
   imageUrl: string
 }
 
-export default function EditEvent() {
+function EditEventContent() {
   const params = useParams<{ id: string }>()
   const router = useRouter()
   const id = params.id
@@ -105,9 +111,7 @@ export default function EditEvent() {
   }, [id])
 
   function handleChange(
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) {
     const { name, value } = e.target
 
@@ -429,5 +433,27 @@ export default function EditEvent() {
         </div>
       </section>
     </main>
+  )
+}
+
+export default function EditEvent() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-[#f7faf8]">
+          <div className="text-center">
+            <Loader2
+              size={42}
+              className="mx-auto animate-spin text-green-700"
+            />
+            <p className="mt-4 font-semibold text-gray-600">
+              Loading event information...
+            </p>
+          </div>
+        </main>
+      }
+    >
+      <EditEventContent />
+    </Suspense>
   )
 }
