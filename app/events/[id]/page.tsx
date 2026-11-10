@@ -7,6 +7,24 @@ interface PageProps {
   params: Promise<{ id: string }>
 }
 
+interface EventItem {
+  _id: string
+  title: string
+  description: string
+  type: string
+  location: string
+  date: string
+  imageUrl: string
+  createdBy: string
+  joined: string[]
+}
+
+interface EventResponse {
+  success: boolean
+  event?: EventItem
+  message?: string
+}
+
 async function EventDetailsContent({ params }: PageProps) {
   const { id } = await params
 
@@ -20,26 +38,38 @@ async function EventDetailsContent({ params }: PageProps) {
     return <div className="p-10 text-center">Please login first.</div>
   }
 
-  const response = await fetch(`http://localhost:5002/events/${id}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    cache: 'no-store',
-  })
+  try {
+    const response = await fetch(`http://localhost:5002/events/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    })
 
-  if (!response.ok) {
+    if (!response.ok) {
+      return (
+        <div className="p-10 text-center text-red-500">
+          Failed to load event.
+        </div>
+      )
+    }
+
+    const data: EventResponse = await response.json()
+
+    if (!data.success || !data.event) {
+      return (
+        <div className="p-10 text-center text-red-500">Event not found.</div>
+      )
+    }
+
+    return <EventDetailsClient event={data.event} token={token} />
+  } catch {
     return (
-      <div className="p-10 text-center text-red-500">Failed to load event.</div>
+      <div className="p-10 text-center text-red-500">
+        Unable to connect to the server.
+      </div>
     )
   }
-
-  const data = await response.json()
-
-  if (!data.success || !data.event) {
-    return <div className="p-10 text-center text-red-500">Event not found.</div>
-  }
-
-  return <EventDetailsClient event={data.event} token={token} />
 }
 
 export default function EventDetailsPage({ params }: PageProps) {

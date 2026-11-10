@@ -28,6 +28,12 @@ interface EventDetailsClientProps {
   token: string
 }
 
+interface ApiResponse {
+  success: boolean
+  message?: string
+  event?: EventItem
+}
+
 export default function EventDetailsClient({
   event: initialEvent,
   token,
@@ -61,11 +67,13 @@ export default function EventDetailsClient({
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ email: cleanEmail }),
+          body: JSON.stringify({
+            email: cleanEmail,
+          }),
         },
       )
 
-      const data = await response.json()
+      const data: ApiResponse = await response.json()
 
       if (!response.ok || !data.success) {
         throw new Error(data.message || 'Unable to join event')
@@ -83,9 +91,9 @@ export default function EventDetailsClient({
         },
       )
 
-      const eventData = await eventResponse.json()
+      const eventData: ApiResponse = await eventResponse.json()
 
-      if (eventResponse.ok && eventData.success) {
+      if (eventResponse.ok && eventData.success && eventData.event) {
         setEvent(eventData.event)
       }
 
@@ -139,6 +147,7 @@ export default function EventDetailsClient({
 
                 <div>
                   <p className="text-sm text-gray-500">Event Date</p>
+
                   <p className="font-medium text-gray-800">
                     {new Date(event.date).toLocaleDateString()}
                   </p>
@@ -150,6 +159,7 @@ export default function EventDetailsClient({
 
                 <div>
                   <p className="text-sm text-gray-500">Location</p>
+
                   <p className="font-medium text-gray-800">{event.location}</p>
                 </div>
               </div>
