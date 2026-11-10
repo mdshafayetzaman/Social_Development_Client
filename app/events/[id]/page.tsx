@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, type FormEvent } from 'react'
+import { Suspense, useEffect, useState, type FormEvent } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -24,7 +24,7 @@ interface EventItem {
   joined: string[]
 }
 
-export default function EventDetailsPage() {
+function EventDetailsContent() {
   const params = useParams()
   const id = params.id as string
 
@@ -41,9 +41,7 @@ export default function EventDetailsPage() {
         setLoading(true)
         setError('')
 
-        const response = await fetch(
-          `http://localhost:5002/events/${id}`,
-        )
+        const response = await fetch(`http://localhost:5002/events/${id}`)
 
         const data = await response.json()
 
@@ -53,9 +51,7 @@ export default function EventDetailsPage() {
 
         setEvent(data.event)
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : 'Something went wrong',
-        )
+        setError(err instanceof Error ? err.message : 'Something went wrong')
       } finally {
         setLoading(false)
       }
@@ -81,16 +77,13 @@ export default function EventDetailsPage() {
       setError('')
       setSuccess('')
 
-      const response = await fetch(
-        `http://localhost:5002/join-event/${id}`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email: cleanEmail }),
+      const response = await fetch(`http://localhost:5002/join-event/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
         },
-      )
+        body: JSON.stringify({ email: cleanEmail }),
+      })
 
       const data = await response.json()
 
@@ -100,9 +93,7 @@ export default function EventDetailsPage() {
 
       setSuccess(data.message || 'Successfully joined the event!')
 
-      const eventResponse = await fetch(
-        `http://localhost:5002/events/${id}`,
-      )
+      const eventResponse = await fetch(`http://localhost:5002/events/${id}`)
 
       const eventData = await eventResponse.json()
 
@@ -112,9 +103,7 @@ export default function EventDetailsPage() {
 
       setEmail('')
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Something went wrong',
-      )
+      setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
       setJoining(false)
     }
@@ -200,9 +189,7 @@ export default function EventDetailsPage() {
 
                 <div>
                   <p className="text-sm text-gray-500">Location</p>
-                  <p className="font-medium text-gray-800">
-                    {event.location}
-                  </p>
+                  <p className="font-medium text-gray-800">{event.location}</p>
                 </div>
               </div>
             </div>
@@ -261,9 +248,7 @@ export default function EventDetailsPage() {
                 </button>
               </form>
 
-              {error && (
-                <p className="mt-3 text-sm text-red-600">{error}</p>
-              )}
+              {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
               {success && (
                 <p className="mt-3 text-sm text-green-700">{success}</p>
@@ -277,5 +262,19 @@ export default function EventDetailsPage() {
         </div>
       </div>
     </main>
+  )
+}
+
+export default function EventDetailsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+        </div>
+      }
+    >
+      <EventDetailsContent />
+    </Suspense>
   )
 }

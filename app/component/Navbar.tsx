@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import {
   Menu,
   X,
@@ -17,10 +16,7 @@ import {
 } from 'lucide-react'
 import { authClient } from '../lib/auht-client'
 
-
 export default function Navbar() {
-  const router = useRouter()
-
   const { data: session, isPending } = authClient.useSession()
 
   const [isOpen, setIsOpen] = useState(false)
@@ -34,23 +30,31 @@ export default function Navbar() {
     { name: 'Upcoming Events', href: '/upcoming-events' },
   ]
 
-  async function handleLogout() {
-    setIsLoggingOut(true)
-
-    try {
-      await authClient.signOut()
-      setIsProfileOpen(false)
-      setIsOpen(false)
-      router.replace('/')
-      router.refresh()
-    } catch {
-      setIsLoggingOut(false)
-    }
-  }
-
   const closeMenus = () => {
     setIsOpen(false)
     setIsProfileOpen(false)
+  }
+
+  async function handleLogout() {
+    if (isLoggingOut) return
+
+    setIsLoggingOut(true)
+
+    try {
+      const result = await authClient.signOut()
+
+      if (result.error) {
+        console.error('Logout error:', result.error)
+        setIsLoggingOut(false)
+        return
+      }
+
+      closeMenus()
+      window.location.replace('/')
+    } catch (error) {
+      console.error('Logout failed:', error)
+      setIsLoggingOut(false)
+    }
   }
 
   return (
@@ -188,10 +192,7 @@ export default function Navbar() {
               className="group flex items-center gap-2 rounded-full bg-gray-900 px-6 py-3 text-sm font-bold text-white shadow-lg transition duration-300 hover:-translate-y-0.5 hover:bg-green-700"
             >
               Login
-              <ArrowUpRight
-                size={17}
-                className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-              />
+              <ArrowUpRight size={17} />
             </Link>
           )}
         </div>
