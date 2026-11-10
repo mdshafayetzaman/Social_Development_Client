@@ -18,6 +18,7 @@ import {
   AlignLeft,
 } from 'lucide-react'
 import { ToastContainer, toast, Bounce } from 'react-toastify'
+import { authClient } from '../lib/auht-client'
 
 const categories = [
   { name: 'Cleanup', icon: Leaf },
@@ -28,11 +29,6 @@ const categories = [
   { name: 'Community', icon: Users },
   { name: 'Other', icon: Sparkles },
 ]
-
-interface CurrentUser {
-  email?: string
-  name?: string
-}
 
 interface CreateEventResponse {
   success: boolean
@@ -63,41 +59,15 @@ export default function CreateEvent() {
     if (isSubmitting) return
 
     const form = e.currentTarget
-
-    const savedUser = localStorage.getItem('kindred-user')
-
-    if (!savedUser) {
-      toast.error('Please login before creating an event.')
-      return
-    }
-
-    let currentUser: CurrentUser
-
-    try {
-      currentUser = JSON.parse(savedUser) as CurrentUser
-    } catch {
-      toast.error('Invalid user session. Please login again.')
-      return
-    }
-
-    const createdBy = currentUser.email?.trim().toLowerCase() || ''
-
-    if (!createdBy) {
-      toast.error('User email not found. Please login again.')
-      return
-    }
-
     const formData = new FormData(form)
 
     const eventData = {
       title: String(formData.get('title') || '').trim(),
       description: String(formData.get('description') || '').trim(),
-      type: String(formData.get('type') || ''),
+      type: String(formData.get('type') || '').trim(),
       location: String(formData.get('location') || '').trim(),
       date: String(formData.get('date') || '').trim(),
       imageUrl: String(formData.get('imageUrl') || '').trim(),
-      createdBy,
-      organizer: currentUser.name?.trim() || createdBy,
       maxParticipants: 50,
     }
 
@@ -113,20 +83,50 @@ export default function CreateEvent() {
       return
     }
 
+    if (
+      eventData.title.length > 100 ||
+      eventData.description.length > 1500 ||
+      eventData.location.length > 150
+    ) {
+      toast.error('Please check the maximum character limits.')
+      return
+    }
+
     if (minDate && eventData.date < minDate) {
       toast.error('Please select a future date.')
+      return
+    }
+
+    try {
+      const imageURL = new URL(eventData.imageUrl)
+
+      if (!['http:', 'https:'].includes(imageURL.protocol)) {
+        toast.error('Please provide a valid image URL.')
+        return
+      }
+    } catch {
+      toast.error('Please provide a valid image URL.')
       return
     }
 
     setIsSubmitting(true)
 
     try {
+      const { data: tokenData, error: tokenError } = await authClient.token()
+
+      if (tokenError || !tokenData?.token) {
+        toast.error('Please login again. Your session has expired.')
+        return
+      }
+
       const response = await fetch('http://localhost:5002/create-event', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${tokenData.token}`,
         },
         body: JSON.stringify(eventData),
+        cache: 'no-store',
       })
 
       const result: CreateEventResponse = await response.json()
@@ -136,9 +136,10 @@ export default function CreateEvent() {
       }
 
       toast.success('Your event has been published successfully!')
-
       form.reset()
     } catch (error) {
+      console.error('Create event error:', error)
+
       toast.error(
         error instanceof Error
           ? error.message
@@ -327,6 +328,7 @@ export default function CreateEvent() {
                 name="imageUrl"
                 type="url"
                 placeholder="https://example.com/image.jpg"
+                maxLength={2000}
                 required
                 className="w-full rounded-2xl border border-gray-200 bg-gray-50/70 px-5 py-4 text-sm text-gray-800 outline-none transition placeholder:text-gray-400 hover:border-gray-300 focus:border-green-600 focus:bg-white focus:ring-4 focus:ring-green-500/10"
               />

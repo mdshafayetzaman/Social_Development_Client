@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   ArrowRight,
   CalendarDays,
@@ -9,8 +10,8 @@ import {
   Users,
   HeartHandshake,
   Loader2,
-  Search,
 } from 'lucide-react'
+import { authClient } from '../lib/auht-client'
 
 interface EventItem {
   _id: string
@@ -24,72 +25,81 @@ interface EventItem {
   joined: string[]
 }
 
+interface JoinedEventsResponse {
+  success: boolean
+  message?: string
+  events?: EventItem[]
+}
+
 export default function JoinEvent() {
+  const router = useRouter()
+  const { data: session, isPending } = authClient.useSession()
+
   const [events, setEvents] = useState<EventItem[]>([])
-  const [email, setEmail] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [searched, setSearched] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  const fetchJoinedEvents = async (userEmail: string) => {
-    const cleanEmail = userEmail.trim().toLowerCase()
-
-    if (!cleanEmail) {
-      setError('Please enter your email address.')
-      return
-    }
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-      setError('Please enter a valid email address.')
-      return
-    }
-
-    setLoading(true)
-    setError('')
-    setSearched(true)
-
+  const fetchJoinedEvents = useCallback(async () => {
     try {
-      const response = await fetch(
-        `http://localhost:5002/joined-events?email=${encodeURIComponent(cleanEmail)}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          cache: 'no-store',
+      setLoading(true)
+      setError('')
+
+      const { data: tokenData, error: tokenError } = await authClient.token()
+
+      if (tokenError || !tokenData?.token) {
+        throw new Error('Please login again.')
+      }
+
+      const response = await fetch('http://localhost:5002/joined-events', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${tokenData.token}`,
+          'Content-Type': 'application/json',
         },
-      )
+        cache: 'no-store',
+      })
 
-      const data = await response.json()
+      const data: JoinedEventsResponse = await response.json()
 
-      if (!response.ok) {
+      if (!response.ok || !data.success) {
         throw new Error(data.message || 'Failed to fetch joined events.')
       }
 
-      setEvents(data.events || [])
-
-      localStorage.setItem('kindred-user-email', cleanEmail)
+      setEvents(Array.isArray(data.events) ? data.events : [])
     } catch (error) {
       setEvents([])
-
       setError(error instanceof Error ? error.message : 'Something went wrong.')
     } finally {
       setLoading(false)
     }
-  }
-
-  useEffect(() => {
-    const savedEmail = localStorage.getItem('kindred-user-email')
-
-    if (savedEmail) {
-      setEmail(savedEmail)
-      fetchJoinedEvents(savedEmail)
-    }
   }, [])
 
-  const handleSearch = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    fetchJoinedEvents(email)
+  useEffect(() => {
+    if (isPending) return
+
+    if (!session?.user) {
+      router.replace('/login?callbackUrl=/joined-events')
+      return
+    }
+
+    fetchJoinedEvents()
+  }, [isPending, session, router, fetchJoinedEvents])
+
+  if (isPending || loading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="mx-auto h-10 w-10 animate-spin text-[#83a32d]" />
+          <p className="mt-4 font-medium text-gray-600">
+            Loading your joined events...
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!session?.user) {
+    return null
   }
 
   return (
@@ -111,49 +121,6 @@ export default function JoinEvent() {
           </p>
         </div>
 
-        <div className="mx-auto mb-12 max-w-xl rounded-2xl border border-[#e7ebe4] bg-white p-6 shadow-sm">
-          <form onSubmit={handleSearch}>
-            <label
-              htmlFor="email"
-              className="mb-3 block text-sm font-bold text-[#19251f]"
-            >
-              Enter your email address
-            </label>
-
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                className="min-w-0 flex-1 rounded-xl border border-[#dce2d9] bg-white px-4 py-4 text-sm outline-none transition focus:border-[#83a32d] focus:ring-2 focus:ring-[#83a32d]/20"
-                required
-              />
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex items-center justify-center gap-2 rounded-xl bg-[#83a32d] px-6 py-4 font-bold text-white transition hover:bg-[#6e8927] disabled:opacity-60"
-              >
-                {loading ? (
-                  <Loader2 size={19} className="animate-spin" />
-                ) : (
-                  <Search size={19} />
-                )}
-
-                {loading ? 'Searching...' : 'Find Events'}
-              </button>
-            </div>
-          </form>
-
-          {error && (
-            <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">
-              {error}
-            </p>
-          )}
-        </div>
-
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold text-[#19251f]">
@@ -171,11 +138,20 @@ export default function JoinEvent() {
           </div>
         </div>
 
-        {loading ? (
-          <div className="flex min-h-[300px] items-center justify-center">
-            <Loader2 size={42} className="animate-spin text-[#83a32d]" />
+        {error && (
+          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+            <p>{error}</p>
+
+            <button
+              onClick={fetchJoinedEvents}
+              className="mt-3 font-bold underline"
+            >
+              Try Again
+            </button>
           </div>
-        ) : events.length > 0 ? (
+        )}
+
+        {events.length > 0 ? (
           <div className="grid grid-cols-1 gap-7 md:grid-cols-2 lg:grid-cols-3">
             {events.map((event) => (
               <div
@@ -183,12 +159,16 @@ export default function JoinEvent() {
                 className="group overflow-hidden rounded-2xl border border-[#e7ebe4] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
               >
                 <div className="relative h-56 overflow-hidden bg-[#e7ece6]">
-                  {event.imageUrl && (
+                  {event.imageUrl ? (
                     <img
                       src={event.imageUrl}
                       alt={event.title}
                       className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                     />
+                  ) : (
+                    <div className="flex h-full items-center justify-center">
+                      <HeartHandshake size={45} className="text-[#83a32d]" />
+                    </div>
                   )}
 
                   <span className="absolute left-5 top-5 rounded-lg bg-white px-4 py-2 text-xs font-bold text-[#58731e]">
@@ -248,7 +228,7 @@ export default function JoinEvent() {
               </div>
             ))}
           </div>
-        ) : searched ? (
+        ) : (
           <div className="rounded-2xl border border-dashed border-[#dce2d9] bg-white px-6 py-20 text-center">
             <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#edf3df]">
               <HeartHandshake size={32} className="text-[#83a32d]" />
@@ -259,8 +239,8 @@ export default function JoinEvent() {
             </h3>
 
             <p className="mx-auto mb-7 max-w-md text-sm leading-7 text-[#819087]">
-              You have not joined any events with this email address yet.
-              Explore community events and become part of something meaningful.
+              You have not joined any events yet. Explore community events and
+              become part of something meaningful.
             </p>
 
             <Link
@@ -270,18 +250,6 @@ export default function JoinEvent() {
               Explore Events
               <ArrowRight size={19} />
             </Link>
-          </div>
-        ) : (
-          <div className="rounded-2xl border border-dashed border-[#dce2d9] bg-white px-6 py-16 text-center">
-            <HeartHandshake size={40} className="mx-auto mb-4 text-[#83a32d]" />
-
-            <h3 className="text-xl font-bold text-[#19251f]">
-              Find Your Joined Events
-            </h3>
-
-            <p className="mt-3 text-sm text-[#819087]">
-              Enter your email address to see your joined events.
-            </p>
           </div>
         )}
       </div>

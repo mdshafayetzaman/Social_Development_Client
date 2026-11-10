@@ -44,6 +44,22 @@ interface EventForm {
   imageUrl: string
 }
 
+async function getAuthToken() {
+  const response = await fetch('/api/auth/token', {
+    method: 'GET',
+    credentials: 'include',
+    cache: 'no-store',
+  })
+
+  const result = await response.json()
+
+  if (!response.ok || !result.token) {
+    throw new Error('Authentication failed. Please login again.')
+  }
+
+  return result.token as string
+}
+
 function EditEventContent() {
   const params = useParams<{ id: string }>()
   const router = useRouter()
@@ -142,10 +158,13 @@ function EditEventContent() {
     setUpdating(true)
 
     try {
+      const token = await getAuthToken()
+
       const response = await fetch(`http://localhost:5002/update-event/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           title: form.title.trim(),

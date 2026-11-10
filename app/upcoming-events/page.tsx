@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { authClient } from '../lib/auht-client'
+
 
 interface EventItem {
   _id: string
@@ -18,48 +20,73 @@ interface EventItem {
   source: string
 }
 
+interface EventsResponse {
+  success: boolean
+  message?: string
+  events?: EventItem[]
+}
+
 export default function UpcomingEventsPage() {
   const [events, setEvents] = useState<EventItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  const { data: session, isPending } = authClient.useSession()
+
   useEffect(() => {
     let isMounted = true
 
     const fetchEvents = async () => {
+      if (isPending) return
+
+      if (!session?.user) {
+        const callbackUrl = window.location.pathname + window.location.search
+
+        window.location.replace(
+          `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`,
+        )
+        return
+      }
+
       try {
+        setLoading(true)
         setError('')
+
+        const { data: tokenData, error: tokenError } = await authClient.token()
+
+        if (tokenError || !tokenData?.token) {
+          throw new Error('Authentication token not found. Please login again.')
+        }
 
         const response = await fetch('http://localhost:5002/events/user', {
           method: 'GET',
-          credentials: 'include',
+          headers: {
+            Authorization: `Bearer ${tokenData.token}`,
+            'Content-Type': 'application/json',
+          },
           cache: 'no-store',
         })
 
         if (response.status === 401) {
-          const callbackUrl = window.location.pathname + window.location.search
-
-          window.location.replace(
-            `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`,
-          )
-
-          return
+          throw new Error('Your login session is invalid. Please login again.')
         }
 
         if (!response.ok) {
           throw new Error('Failed to fetch upcoming events.')
         }
 
-        const data = await response.json()
+        const data: EventsResponse = await response.json()
+
+        if (!data.success) {
+          throw new Error(data.message || 'Failed to fetch events.')
+        }
 
         if (isMounted) {
           setEvents(Array.isArray(data.events) ? data.events : [])
         }
-      } catch (error) {
+      } catch (err) {
         if (isMounted) {
-          setError(
-            error instanceof Error ? error.message : 'Something went wrong.',
-          )
+          setError(err instanceof Error ? err.message : 'Something went wrong.')
         }
       } finally {
         if (isMounted) {
@@ -73,9 +100,9 @@ export default function UpcomingEventsPage() {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [session, isPending])
 
-  if (loading) {
+  if (isPending || loading) {
     return (
       <div className="py-20 text-center">
         <p className="text-lg font-medium">Loading upcoming events...</p>
@@ -84,7 +111,17 @@ export default function UpcomingEventsPage() {
   }
 
   if (error) {
-    return <div className="py-20 text-center text-red-500">{error}</div>
+    return (
+      <div className="py-20 text-center">
+        <p className="text-red-500">{error}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-4 rounded-lg bg-green-600 px-5 py-2 text-white hover:bg-green-700"
+        >
+          Try Again
+        </button>
+      </div>
+    )
   }
 
   return (

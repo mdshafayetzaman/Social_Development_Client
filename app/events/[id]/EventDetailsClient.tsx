@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type FormEvent } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import {
   ArrowLeft,
@@ -9,7 +9,11 @@ import {
   Users,
   HeartHandshake,
   Loader2,
+  CheckCircle2,
 } from 'lucide-react'
+
+import { authClient } from '@/app/lib/auht-client'
+
 
 interface EventItem {
   _id: string
@@ -39,18 +43,33 @@ export default function EventDetailsClient({
   token,
 }: EventDetailsClientProps) {
   const [event, setEvent] = useState(initialEvent)
-  const [email, setEmail] = useState('')
   const [joining, setJoining] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
-  const handleJoinEvent = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
+  const { data: session, isPending } = authClient.useSession()
 
-    const cleanEmail = email.trim().toLowerCase()
+  const userEmail = session?.user?.email?.trim().toLowerCase() || ''
 
-    if (!cleanEmail) {
-      setError('Please enter your email address')
+  const isJoined =
+    !!userEmail &&
+    event.joined?.some((user) => user.trim().toLowerCase() === userEmail)
+
+  const handleJoinEvent = async () => {
+    if (isPending) return
+
+    if (!session?.user) {
+      window.location.href = '/login'
+      return
+    }
+
+    if (!token) {
+      setError('Authentication token not found. Please login again.')
+      return
+    }
+
+    if (isJoined) {
+      setSuccess('You have already joined this event.')
       return
     }
 
@@ -64,12 +83,8 @@ export default function EventDetailsClient({
         {
           method: 'PATCH',
           headers: {
-            'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({
-            email: cleanEmail,
-          }),
         },
       )
 
@@ -84,9 +99,6 @@ export default function EventDetailsClient({
       const eventResponse = await fetch(
         `http://localhost:5002/events/${event._id}`,
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
           cache: 'no-store',
         },
       )
@@ -96,8 +108,6 @@ export default function EventDetailsClient({
       if (eventResponse.ok && eventData.success && eventData.event) {
         setEvent(eventData.event)
       }
-
-      setEmail('')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
@@ -110,7 +120,7 @@ export default function EventDetailsClient({
       <div className="mx-auto max-w-5xl">
         <Link
           href="/events"
-          className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-green-600"
+          className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-600 transition hover:text-green-600"
         >
           <ArrowLeft size={18} />
           Back to Events
@@ -185,44 +195,52 @@ export default function EventDetailsClient({
                   </h2>
 
                   <p className="text-sm text-gray-600">
-                    Enter your email to participate in this event.
+                    Be a part of this social development activity.
                   </p>
                 </div>
               </div>
 
-              <form
-                onSubmit={handleJoinEvent}
-                className="flex flex-col gap-3 sm:flex-row"
+              <button
+                type="button"
+                onClick={handleJoinEvent}
+                disabled={joining || isPending || isJoined}
+                className={`flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 font-semibold text-white transition disabled:cursor-not-allowed ${
+                  isJoined
+                    ? 'bg-gray-500'
+                    : 'bg-green-600 hover:bg-green-700 disabled:opacity-60'
+                }`}
               >
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email address"
-                  required
-                  className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-4 py-3 outline-none focus:border-green-500"
-                />
-
-                <button
-                  type="submit"
-                  disabled={joining}
-                  className="flex items-center justify-center gap-2 rounded-lg bg-green-600 px-6 py-3 font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {joining ? (
-                    <>
-                      <Loader2 size={18} className="animate-spin" />
-                      Joining...
-                    </>
-                  ) : (
-                    'Join Event'
-                  )}
-                </button>
-              </form>
+                {joining ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    Joining...
+                  </>
+                ) : isJoined ? (
+                  <>
+                    <CheckCircle2 size={18} />
+                    Already Joined
+                  </>
+                ) : (
+                  <>
+                    <HeartHandshake size={18} />
+                    Join Event
+                  </>
+                )}
+              </button>
 
               {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
               {success && (
-                <p className="mt-3 text-sm text-green-700">{success}</p>
+                <p className="mt-3 flex items-center gap-2 text-sm text-green-700">
+                  <CheckCircle2 size={16} />
+                  {success}
+                </p>
+              )}
+
+              {isJoined && (
+                <p className="mt-4 text-sm font-medium text-green-700">
+                  You have already joined this event.
+                </p>
               )}
 
               <p className="mt-4 text-sm text-gray-600">
