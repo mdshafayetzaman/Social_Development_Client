@@ -89,9 +89,11 @@ export default function EventsPage() {
   const filteredEvents = useMemo(() => {
     const searchValue = search.trim().toLowerCase()
 
-    if (!searchValue) return sortedEvents
+    const latestEvents = sortedEvents.slice(0, 9)
 
-    return sortedEvents.filter((event) => {
+    if (!searchValue) return latestEvents
+
+    return latestEvents.filter((event) => {
       return (
         event.title?.toLowerCase().includes(searchValue) ||
         event.category?.toLowerCase().includes(searchValue) ||
