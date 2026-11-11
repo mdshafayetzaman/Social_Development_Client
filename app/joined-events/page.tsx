@@ -50,14 +50,17 @@ export default function JoinEvent() {
         throw new Error('Please login again.')
       }
 
-      const response = await fetch('http://localhost:5002/joined-events', {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${tokenData.token}`,
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        'https://development-social.vercel.app/joined-events',
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${tokenData.token}`,
+            'Content-Type': 'application/json',
+          },
+          cache: 'no-store',
         },
-        cache: 'no-store',
-      })
+      )
 
       const data: JoinedEventsResponse = await response.json()
 

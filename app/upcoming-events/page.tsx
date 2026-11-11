@@ -58,14 +58,17 @@ export default function UpcomingEventsPage() {
           throw new Error('Authentication token not found. Please login again.')
         }
 
-        const response = await fetch('http://localhost:5002/events/user', {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${tokenData.token}`,
-            'Content-Type': 'application/json',
+        const response = await fetch(
+          'https://development-social.vercel.app/events/user',
+          {
+            method: 'GET',
+            headers: {
+              Authorization: `Bearer ${tokenData.token}`,
+              'Content-Type': 'application/json',
+            },
+            cache: 'no-store',
           },
-          cache: 'no-store',
-        })
+        )
 
         if (response.status === 401) {
           throw new Error('Your login session is invalid. Please login again.')

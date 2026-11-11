@@ -79,7 +79,7 @@ export default function EventDetailsClient({
       setSuccess('')
 
       const response = await fetch(
-        `http://localhost:5002/join-event/${event._id}`,
+        `https://development-social.vercel.app/${event._id}`,
         {
           method: 'PATCH',
           headers: {

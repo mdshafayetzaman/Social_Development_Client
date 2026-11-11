@@ -68,14 +68,17 @@ export default function ManageEventsPage() {
 
       const token = await getToken()
 
-      const response = await fetch('http://localhost:5002/events/user', {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
+      const response = await fetch(
+        'https://development-social.vercel.app/events/user',
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          cache: 'no-store',
+          signal: controller.signal,
         },
-        cache: 'no-store',
-        signal: controller.signal,
-      })
+      )
 
       const data = await response.json()
 

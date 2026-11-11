@@ -89,10 +89,13 @@ function EditEventContent() {
         setLoading(true)
         setError('')
 
-        const response = await fetch(`http://localhost:5002/events/${id}`, {
-          cache: 'no-store',
-          signal: controller.signal,
-        })
+        const response = await fetch(
+          `https://development-social.vercel.app/events/${id}`,
+          {
+            cache: 'no-store',
+            signal: controller.signal,
+          },
+        )
 
         const result = await response.json()
 

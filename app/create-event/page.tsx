@@ -20,6 +20,7 @@ import {
 import { ToastContainer, toast, Bounce } from 'react-toastify'
 import { authClient } from '../lib/auht-client'
 
+
 const categories = [
   { name: 'Cleanup', icon: Leaf },
   { name: 'Plantation', icon: Leaf },
@@ -119,15 +120,18 @@ export default function CreateEvent() {
         return
       }
 
-      const response = await fetch('http://localhost:5002/create-event', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${tokenData.token}`,
+      const response = await fetch(
+        'https://development-social.vercel.app/create-event',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${tokenData.token}`,
+          },
+          body: JSON.stringify(eventData),
+          cache: 'no-store',
         },
-        body: JSON.stringify(eventData),
-        cache: 'no-store',
-      })
+      )
 
       const result: CreateEventResponse = await response.json()
 

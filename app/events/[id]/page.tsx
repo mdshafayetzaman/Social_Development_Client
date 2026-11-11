@@ -39,12 +39,15 @@ async function EventDetailsContent({ params }: PageProps) {
   }
 
   try {
-    const response = await fetch(`http://localhost:5002/events/${id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
+    const response = await fetch(
+      `https://development-social.vercel.app/events/${id}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        cache: 'no-store',
       },
-      cache: 'no-store',
-    })
+    )
 
     if (!response.ok) {
       return (

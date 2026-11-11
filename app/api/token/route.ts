@@ -1,39 +1,23 @@
 import { auth } from '@/app/lib/auth'
-import { headers } from 'next/headers'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const tokenData = await auth.api.getToken({
-      headers: await headers(),
+      headers: request.headers,
     })
 
     if (!tokenData?.token) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Authentication required.',
-        },
-        { status: 401 },
-      )
+      return NextResponse.json({ message: 'Token not found' }, { status: 401 })
     }
 
-    return NextResponse.json(
-      {
-        success: true,
-        token: tokenData.token,
-      },
-      { status: 200 },
-    )
+    return NextResponse.json(tokenData)
   } catch (error) {
     console.error('Auth token route error:', error)
 
     return NextResponse.json(
-      {
-        success: false,
-        message: 'Failed to generate token.',
-      },
-      { status: 401 },
+      { message: 'Failed to get token' },
+      { status: 500 },
     )
   }
 }

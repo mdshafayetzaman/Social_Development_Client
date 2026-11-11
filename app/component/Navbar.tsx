@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { authClient } from '../lib/auht-client'
 
+
 export default function Navbar() {
   const { data: session, isPending } = authClient.useSession()
 
