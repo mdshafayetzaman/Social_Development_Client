@@ -22,6 +22,7 @@ import {
   CheckCircle2,
   AlertCircle,
 } from 'lucide-react'
+import { apiUrl, getAuthToken } from '@/app/lib/api'
 
 interface EventItem {
   _id: string
@@ -42,22 +43,6 @@ interface EventForm {
   location: string
   date: string
   imageUrl: string
-}
-
-async function getAuthToken() {
-  const response = await fetch('/api/auth/token', {
-    method: 'GET',
-    credentials: 'include',
-    cache: 'no-store',
-  })
-
-  const result = await response.json()
-
-  if (!response.ok || !result.token) {
-    throw new Error('Authentication failed. Please login again.')
-  }
-
-  return result.token as string
 }
 
 function EditEventContent() {
@@ -89,13 +74,10 @@ function EditEventContent() {
         setLoading(true)
         setError('')
 
-        const response = await fetch(
-          `https://development-social.vercel.app/events/${id}`,
-          {
-            cache: 'no-store',
-            signal: controller.signal,
-          },
-        )
+        const response = await fetch(apiUrl(`/events/${id}`), {
+          cache: 'no-store',
+          signal: controller.signal,
+        })
 
         const result = await response.json()
 
@@ -163,7 +145,7 @@ function EditEventContent() {
     try {
       const token = await getAuthToken()
 
-      const response = await fetch(`http://localhost:5002/update-event/${id}`, {
+      const response = await fetch(apiUrl(`/update-event/${id}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

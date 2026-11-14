@@ -12,6 +12,7 @@ import {
   Loader2,
 } from 'lucide-react'
 import { authClient } from '../lib/auht-client'
+import { apiUrl, getAuthToken } from '../lib/api'
 
 interface EventItem {
   _id: string
@@ -44,23 +45,16 @@ export default function JoinEvent() {
       setLoading(true)
       setError('')
 
-      const { data: tokenData, error: tokenError } = await authClient.token()
+      const token = await getAuthToken()
 
-      if (tokenError || !tokenData?.token) {
-        throw new Error('Please login again.')
-      }
-
-      const response = await fetch(
-        'https://development-social.vercel.app/joined-events',
-        {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${tokenData.token}`,
-            'Content-Type': 'application/json',
-          },
-          cache: 'no-store',
+      const response = await fetch(apiUrl('/joined-events'), {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
-      )
+        cache: 'no-store',
+      })
 
       const data: JoinedEventsResponse = await response.json()
 

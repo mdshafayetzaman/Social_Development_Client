@@ -16,6 +16,7 @@ import {
   X,
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
+import { apiUrl, getAuthToken } from '../lib/api'
 
 interface Event {
   _id: string
@@ -40,25 +41,6 @@ export default function ManageEventsPage() {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
   const [error, setError] = useState('')
 
-  const getToken = async (): Promise<string> => {
-    const response = await fetch('/api/auth/token', {
-      method: 'GET',
-      cache: 'no-store',
-    })
-
-    if (!response.ok) {
-      throw new Error('Authentication token পাওয়া যায়নি')
-    }
-
-    const data = await response.json()
-
-    if (!data.token) {
-      throw new Error('Please login again')
-    }
-
-    return data.token
-  }
-
   const fetchEvents = useCallback(async () => {
     const controller = new AbortController()
 
@@ -66,19 +48,16 @@ export default function ManageEventsPage() {
       setLoading(true)
       setError('')
 
-      const token = await getToken()
+      const token = await getAuthToken()
 
-      const response = await fetch(
-        'https://development-social.vercel.app/events/user',
-        {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          cache: 'no-store',
-          signal: controller.signal,
+      const response = await fetch(apiUrl('/events/user'), {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-      )
+        cache: 'no-store',
+        signal: controller.signal,
+      })
 
       const data = await response.json()
 
@@ -109,10 +88,10 @@ export default function ManageEventsPage() {
     try {
       setDeleting(true)
 
-      const token = await getToken()
+      const token = await getAuthToken()
 
       const response = await fetch(
-        `http://localhost:5002/delete-event/${selectedEvent._id}`,
+        apiUrl(`/delete-event/${selectedEvent._id}`),
         {
           method: 'DELETE',
           headers: {

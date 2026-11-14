@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 
 import { authClient } from '@/app/lib/auht-client'
+import { apiUrl } from '@/app/lib/api'
 
 
 interface EventItem {
@@ -78,15 +79,12 @@ export default function EventDetailsClient({
       setError('')
       setSuccess('')
 
-      const response = await fetch(
-        `https://development-social.vercel.app/${event._id}`,
-        {
-          method: 'PATCH',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      const response = await fetch(apiUrl(`/join-event/${event._id}`), {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-      )
+      })
 
       const data: ApiResponse = await response.json()
 
@@ -96,12 +94,9 @@ export default function EventDetailsClient({
 
       setSuccess(data.message || 'Successfully joined the event!')
 
-      const eventResponse = await fetch(
-        `http://localhost:5002/events/${event._id}`,
-        {
-          cache: 'no-store',
-        },
-      )
+      const eventResponse = await fetch(apiUrl(`/events/${event._id}`), {
+        cache: 'no-store',
+      })
 
       const eventData: ApiResponse = await eventResponse.json()
 

@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { headers } from 'next/headers'
 import { auth } from '@/app/lib/auth'
+import { apiUrl } from '@/app/lib/api'
 import EventDetailsClient from './EventDetailsClient'
 
 interface PageProps {
@@ -39,15 +40,12 @@ async function EventDetailsContent({ params }: PageProps) {
   }
 
   try {
-    const response = await fetch(
-      `https://development-social.vercel.app/events/${id}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        cache: 'no-store',
+    const response = await fetch(apiUrl(`/events/${id}`), {
+      headers: {
+        Authorization: `Bearer ${token}`,
       },
-    )
+      cache: 'no-store',
+    })
 
     if (!response.ok) {
       return (

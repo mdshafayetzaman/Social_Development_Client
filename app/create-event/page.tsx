@@ -18,7 +18,7 @@ import {
   AlignLeft,
 } from 'lucide-react'
 import { ToastContainer, toast, Bounce } from 'react-toastify'
-import { authClient } from '../lib/auht-client'
+import { apiUrl, getAuthToken } from '../lib/api'
 
 
 const categories = [
@@ -113,25 +113,17 @@ export default function CreateEvent() {
     setIsSubmitting(true)
 
     try {
-      const { data: tokenData, error: tokenError } = await authClient.token()
+      const token = await getAuthToken()
 
-      if (tokenError || !tokenData?.token) {
-        toast.error('Please login again. Your session has expired.')
-        return
-      }
-
-      const response = await fetch(
-        'https://development-social.vercel.app/create-event',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${tokenData.token}`,
-          },
-          body: JSON.stringify(eventData),
-          cache: 'no-store',
+      const response = await fetch(apiUrl('/create-event'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
-      )
+        body: JSON.stringify(eventData),
+        cache: 'no-store',
+      })
 
       const result: CreateEventResponse = await response.json()
 

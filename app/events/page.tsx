@@ -13,6 +13,7 @@ import {
   Loader2,
 } from 'lucide-react'
 import { authClient } from '../lib/auht-client'
+import { apiUrl } from '../lib/api'
 
 interface EventItem {
   _id: string
@@ -45,13 +46,10 @@ export default function EventsPage() {
       try {
         setError('')
 
-        const response = await fetch(
-          'https://development-social.vercel.app/events',
-          {
-            method: 'GET',
-            cache: 'no-store',
-          },
-        )
+        const response = await fetch(apiUrl('/events'), {
+          method: 'GET',
+          cache: 'no-store',
+        })
 
         if (!response.ok) {
           throw new Error('Failed to fetch community events.')
